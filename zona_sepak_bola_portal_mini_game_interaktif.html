@@ -1,0 +1,1387 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zona Sepak Bola | Portal & Mini-Game Interaktif</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & Oswald for sporty headers -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Tone.js for Game Sound Effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        display: ['Oswald', 'sans-serif'],
+                    },
+                    colors: {
+                        pitch: {
+                            light: '#22c55e',
+                            DEFAULT: '#16a34a',
+                            dark: '#15803d',
+                            darker: '#052e16',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom Pitch Stripes Pattern */
+        .pitch-pattern {
+            background-color: #16a34a;
+            background-image: repeating-linear-gradient(
+                0deg,
+                #16a34a,
+                #16a34a 35px,
+                #15803d 35px,
+                #15803d 70px
+            );
+        }
+
+        /* Hero Stadium Lights Effect */
+        .stadium-glow {
+            background: radial-gradient(circle at 50% 0%, rgba(34, 197, 94, 0.35) 0%, rgba(5, 46, 22, 0.95) 70%);
+        }
+
+        /* Pulse animation for player markers */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.85); opacity: 0.8; }
+            70% { transform: scale(1.35); opacity: 0; }
+            100% { transform: scale(1.35); opacity: 0; }
+        }
+        .player-marker-ring {
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+
+        /* Custom Canvas styling for Penalty Game */
+        #penaltyCanvas {
+            touch-action: none;
+            cursor: crosshair;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans antialiased selection:bg-emerald-500 selection:text-white">
+
+    <!-- Navbar -->
+    <nav class="fixed top-0 inset-x-0 z-50 bg-slate-950/85 backdrop-blur-md border-b border-emerald-900/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                <a href="#beranda" class="flex items-center gap-2.5 group">
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-700 flex items-center justify-center shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform">
+                        <span class="text-xl">⚽</span>
+                    </div>
+                    <div>
+                        <span class="font-display text-xl tracking-wide uppercase font-bold text-white">Zona<span class="text-emerald-400">Bola</span></span>
+                        <span class="block text-[10px] text-emerald-300/80 uppercase tracking-widest -mt-1">Portal Sepak Bola</span>
+                    </div>
+                </a>
+
+                <!-- Desktop Menu -->
+                <div class="hidden md:flex items-center space-x-1">
+                    <a href="#sejarah" class="px-3.5 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-emerald-900/40 transition">Sejarah</a>
+                    <a href="#peraturan" class="px-3.5 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-emerald-900/40 transition">Peraturan</a>
+                    <a href="#taktik" class="px-3.5 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-emerald-900/40 transition">Posisi & Taktik</a>
+                    <a href="#jadwal" class="px-3.5 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-emerald-900/40 transition">Jadwal & Skor</a>
+                    <a href="#penalti" class="ml-2 px-4 py-2 rounded-xl text-sm font-semibold bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-md shadow-emerald-500/20 transition flex items-center gap-1.5">
+                        <i data-lucide="gamepad-2" class="w-4 h-4"></i> Adu Penalti
+                    </a>
+                </div>
+
+                <!-- Mobile Menu Button -->
+                <div class="md:hidden">
+                    <button id="mobileMenuBtn" class="p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 focus:outline-none" aria-label="Buka Menu">
+                        <i data-lucide="menu" class="w-6 h-6"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Dropdown -->
+        <div id="mobileMenu" class="hidden md:hidden bg-slate-900 border-b border-emerald-900/50 px-4 pt-2 pb-4 space-y-1">
+            <a href="#sejarah" class="mobile-link block px-3 py-2.5 rounded-lg text-base font-medium text-slate-200 hover:bg-emerald-900/40">Sejarah Singkat</a>
+            <a href="#peraturan" class="mobile-link block px-3 py-2.5 rounded-lg text-base font-medium text-slate-200 hover:bg-emerald-900/40">Peraturan Dasar</a>
+            <a href="#taktik" class="mobile-link block px-3 py-2.5 rounded-lg text-base font-medium text-slate-200 hover:bg-emerald-900/40">Posisi & Lapangan Interaktif</a>
+            <a href="#jadwal" class="mobile-link block px-3 py-2.5 rounded-lg text-base font-medium text-slate-200 hover:bg-emerald-900/40">Jadwal & Skor Simulasi</a>
+            <a href="#penalti" class="mobile-link block px-3 py-2.5 rounded-lg text-base font-semibold bg-emerald-500 text-slate-950 mt-2 text-center">⚽ Main Adu Penalti</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="beranda" class="relative pt-28 pb-20 md:pt-36 md:pb-28 overflow-hidden stadium-glow border-b border-emerald-900/40">
+        <!-- Decorative Pitch Lines Background -->
+        <div class="absolute inset-0 opacity-10 pointer-events-none flex items-center justify-center">
+            <div class="w-[600px] h-[600px] border-4 border-white rounded-full"></div>
+            <div class="absolute w-full h-1 bg-white"></div>
+        </div>
+
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-950/80 border border-emerald-500/30 text-emerald-300 text-xs font-semibold uppercase tracking-wider mb-6">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                Ensiklopedia & Arena Interaktif Sepak Bola
+            </div>
+            
+            <h1 class="font-display text-4xl sm:text-6xl lg:text-7xl font-bold uppercase tracking-tight text-white max-w-4xl mx-auto leading-[1.1]">
+                Kuasai Lapangan, Pahami <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-lime-300">Taktik & Strategi</span>
+            </h1>
+            
+            <p class="mt-6 text-base sm:text-lg text-slate-300 max-w-2xl mx-auto leading-relaxed">
+                Pelajari asal-usul olahraga paling populer di dunia, pahami aturan resmi permainan, eksplorasi peran setiap posisi di lapangan, hingga uji ketajaman tendanganmu di arena adu penalti!
+            </p>
+
+            <div class="mt-9 flex flex-col sm:flex-row items-center justify-center gap-4">
+                <a href="#penalti" class="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-base shadow-lg shadow-emerald-500/25 transition flex items-center justify-center gap-2">
+                    <i data-lucide="trophy" class="w-5 h-5"></i>
+                    Mulai Adu Penalti
+                </a>
+                <a href="#taktik" class="w-full sm:w-auto px-7 py-3.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-white border border-slate-700 font-semibold text-base transition flex items-center justify-center gap-2">
+                    <i data-lucide="layout-grid" class="w-5 h-5 text-emerald-400"></i>
+                    Eksplorasi Posisi Pemain
+                </a>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="mt-16 grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
+                <div class="p-4 rounded-2xl bg-slate-900/60 border border-emerald-900/40 backdrop-blur-sm">
+                    <div class="font-display text-2xl sm:text-3xl font-bold text-emerald-400">11 vs 11</div>
+                    <div class="text-xs sm:text-sm text-slate-400 mt-1">Pemain di Lapangan</div>
+                </div>
+                <div class="p-4 rounded-2xl bg-slate-900/60 border border-emerald-900/40 backdrop-blur-sm">
+                    <div class="font-display text-2xl sm:text-3xl font-bold text-emerald-400">90 Menit</div>
+                    <div class="text-xs sm:text-sm text-slate-400 mt-1">Waktu Normal (2x45')</div>
+                </div>
+                <div class="p-4 rounded-2xl bg-slate-900/60 border border-emerald-900/40 backdrop-blur-sm">
+                    <div class="font-display text-2xl sm:text-3xl font-bold text-emerald-400">1863</div>
+                    <div class="text-xs sm:text-sm text-slate-400 mt-1">Aturan Modern Dibuat</div>
+                </div>
+                <div class="p-4 rounded-2xl bg-slate-900/60 border border-emerald-900/40 backdrop-blur-sm">
+                    <div class="font-display text-2xl sm:text-3xl font-bold text-emerald-400">3.5 Miliar+</div>
+                    <div class="text-xs sm:text-sm text-slate-400 mt-1">Penggemar di Dunia</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 1: Sejarah Singkat Sepak Bola -->
+    <section id="sejarah" class="py-20 bg-slate-950">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-2xl mx-auto mb-14">
+                <span class="text-emerald-400 font-semibold text-sm uppercase tracking-wider">Jejak Langkah</span>
+                <h2 class="font-display text-3xl sm:text-4xl font-bold uppercase text-white mt-1">Sejarah Singkat Sepak Bola</h2>
+                <p class="text-slate-400 mt-3 text-sm sm:text-base">Dari permainan tradisional kuno hingga menjadi fenomena olahraga terbesar sejagat.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Era 1 -->
+                <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 hover:border-emerald-500/50 transition group">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-950 border border-emerald-700/50 flex items-center justify-center text-emerald-400 font-display font-bold text-lg mb-4 group-hover:bg-emerald-500 group-hover:text-slate-950 transition">
+                        200 SM
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2">Cuju di Tiongkok Kuno</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">
+                        FIFA mengakui <em>Cuju</em> sebagai bentuk sepak bola paling awal. Pemain menendang bola kulit berisi bulu ke dalam jaring kecil tanpa menggunakan tangan sebagai latihan militer Dinasti Han.
+                    </p>
+                </div>
+
+                <!-- Era 2 -->
+                <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 hover:border-emerald-500/50 transition group">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-950 border border-emerald-700/50 flex items-center justify-center text-emerald-400 font-display font-bold text-lg mb-4 group-hover:bg-emerald-500 group-hover:text-slate-950 transition">
+                        1863
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2">Lahirnya FA di Inggris</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">
+                        The Football Association (FA) didirikan di London pada 26 Oktober 1863. Momen ini memisahkan aturan sepak bola (Association Football) dari rugby dengan melarang membawa bola dengan tangan.
+                    </p>
+                </div>
+
+                <!-- Era 3 -->
+                <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 hover:border-emerald-500/50 transition group">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-950 border border-emerald-700/50 flex items-center justify-center text-emerald-400 font-display font-bold text-lg mb-4 group-hover:bg-emerald-500 group-hover:text-slate-950 transition">
+                        1904
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2">Berdirinya FIFA</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">
+                        Fédération Internationale de Football Association (FIFA) didirikan di Paris untuk mengawasi kompetisi internasional antarnegara, sebelum akhirnya menggelar Piala Dunia pertama di Uruguay pada 1930.
+                    </p>
+                </div>
+
+                <!-- Era 4 -->
+                <div class="p-6 rounded-2xl bg-slate-900 border border-slate-800 hover:border-emerald-500/50 transition group">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-950 border border-emerald-700/50 flex items-center justify-center text-emerald-400 font-display font-bold text-lg mb-4 group-hover:bg-emerald-500 group-hover:text-slate-950 transition">
+                        1930
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2">PSSI & Sepak Bola Modern</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">
+                        Di Indonesia, PSSI berdiri pada 19 April 1930 oleh Soeratin Sosrosoegondo. Kini sepak bola modern dilengkapi teknologi VAR, garis gawang, dan analisis data canggih.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 2: Peraturan Dasar Permainan -->
+    <section id="peraturan" class="py-20 bg-slate-900/60 border-y border-slate-800/80">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
+                <div>
+                    <span class="text-emerald-400 font-semibold text-sm uppercase tracking-wider">Laws of the Game</span>
+                    <h2 class="font-display text-3xl sm:text-4xl font-bold uppercase text-white mt-1">Peraturan Dasar Permainan</h2>
+                </div>
+                <p class="text-slate-400 text-sm max-w-md">Memahami aturan utama agar pertandingan berjalan adil, sportif, dan seru dinikmati.</p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Rule 1 -->
+                <div class="p-6 rounded-2xl bg-slate-950 border border-slate-800 flex gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">
+                        <i data-lucide="clock" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-white text-lg">Durasi Pertandingan</h3>
+                        <p class="text-sm text-slate-400 mt-1.5 leading-relaxed">
+                            Berlangsung selama <strong class="text-slate-200">2 x 45 menit</strong> dengan jeda istirahat maksimal 15 menit. Wasit berhak memberi tambahan waktu (<em>injury time</em>) di akhir tiap babak.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Rule 2 -->
+                <div class="p-6 rounded-2xl bg-slate-950 border border-slate-800 flex gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">
+                        <i data-lucide="flag" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-white text-lg">Aturan Offside</h3>
+                        <p class="text-sm text-slate-400 mt-1.5 leading-relaxed">
+                            Pemain dianggap <em>offside</em> jika berada lebih dekat ke garis gawang lawan daripada bola dan pemain bertahan kedua terakhir saat bola diumpan kepadanya di area lawan.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Rule 3 -->
+                <div class="p-6 rounded-2xl bg-slate-950 border border-slate-800 flex gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0">
+                        <i data-lucide="square" class="w-6 h-6 fill-amber-400"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-white text-lg">Kartu Kuning & Merah</h3>
+                        <p class="text-sm text-slate-400 mt-1.5 leading-relaxed">
+                            <strong class="text-amber-400">Kartu Kuning</strong> adalah peringatan keras. <strong class="text-rose-500">Kartu Merah</strong> (atau 2 kartu kuning) membuat pemain diusir keluar lapangan dan tim bermain dengan 10 orang.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Rule 4 -->
+                <div class="p-6 rounded-2xl bg-slate-950 border border-slate-800 flex gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">
+                        <i data-lucide="hand" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-white text-lg">Handball (Pelanggaran Tangan)</h3>
+                        <p class="text-sm text-slate-400 mt-1.5 leading-relaxed">
+                            Hanya kiper di dalam kotak penaltinya sendiri yang boleh menyentuh bola dengan tangan. Pemain lain yang menyentuh bola secara aktif akan dikenakan tendangan bebas atau penalti.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Rule 5 -->
+                <div class="p-6 rounded-2xl bg-slate-950 border border-slate-800 flex gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">
+                        <i data-lucide="target" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-white text-lg">Tendangan Penalti</h3>
+                        <p class="text-sm text-slate-400 mt-1.5 leading-relaxed">
+                            Diberikan jika tim bertahan melakukan pelanggaran di dalam kotak penalti sendiri. Eksekutor menendang dari titik 11 meter berhadapan langsung dengan kiper.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Rule 6 -->
+                <div class="p-6 rounded-2xl bg-slate-950 border border-slate-800 flex gap-4">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">
+                        <i data-lucide="corner-up-right" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-white text-lg">Bola Mati (Set Piece)</h3>
+                        <p class="text-sm text-slate-400 mt-1.5 leading-relaxed">
+                            Meliputi lemparan ke dalam (<em>throw-in</em>) saat bola keluar garis samping, tendangan sudut (<em>corner kick</em>), dan tendangan gawang (<em>goal kick</em>).
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 3: Posisi Pemain dengan Visualisasi Lapangan Interaktif -->
+    <section id="taktik" class="py-20 bg-slate-950">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-2xl mx-auto mb-10">
+                <span class="text-emerald-400 font-semibold text-sm uppercase tracking-wider">Papan Taktik Interaktif</span>
+                <h2 class="font-display text-3xl sm:text-4xl font-bold uppercase text-white mt-1">Posisi & Peran Pemain</h2>
+                <p class="text-slate-400 mt-2 text-sm sm:text-base">Pilih formasi dan <strong class="text-emerald-400">klik ikon pemain</strong> di lapangan hijau untuk melihat tugas utama mereka.</p>
+            </div>
+
+            <!-- Formation Selector -->
+            <div class="flex flex-wrap items-center justify-center gap-2 mb-8">
+                <span class="text-xs uppercase tracking-wider text-slate-400 mr-2 font-semibold">Pilih Formasi:</span>
+                <button onclick="setFormation('4-3-3')" id="btn-4-3-3" class="formation-btn px-4 py-2 rounded-xl text-sm font-bold bg-emerald-500 text-slate-950 shadow-md transition">4-3-3 Menyerang</button>
+                <button onclick="setFormation('4-4-2')" id="btn-4-4-2" class="formation-btn px-4 py-2 rounded-xl text-sm font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition">4-4-2 Klasik</button>
+                <button onclick="setFormation('3-5-2')" id="btn-3-5-2" class="formation-btn px-4 py-2 rounded-xl text-sm font-bold bg-slate-800 text-slate-300 hover:bg-slate-700 transition">3-5-2 Dominasi Tengah</button>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                <!-- Interactive Soccer Pitch -->
+                <div class="lg:col-span-7">
+                    <div class="relative w-full aspect-[3/4] sm:aspect-[4/3] max-w-2xl mx-auto rounded-2xl pitch-pattern border-4 border-white/90 shadow-2xl overflow-hidden select-none">
+                        <!-- Pitch Markings -->
+                        <!-- Outer Border Inset -->
+                        <div class="absolute inset-3 border-2 border-white/80 pointer-events-none"></div>
+                        <!-- Halfway Line -->
+                        <div class="absolute top-1/2 inset-x-3 h-0.5 bg-white/80 -translate-y-1/2 pointer-events-none"></div>
+                        <!-- Center Circle -->
+                        <div class="absolute top-1/2 left-1/2 w-24 h-24 sm:w-32 sm:h-32 border-2 border-white/80 rounded-full -translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+                        <div class="absolute top-1/2 left-1/2 w-2 h-2 bg-white rounded-full -translate-x-1/2 -translate-y-1/2 pointer-events-none"></div>
+                        
+                        <!-- Top Penalty Box (Opponent) -->
+                        <div class="absolute top-3 left-1/2 w-44 sm:w-56 h-16 sm:h-20 border-2 border-t-0 border-white/80 -translate-x-1/2 pointer-events-none"></div>
+                        <div class="absolute top-3 left-1/2 w-20 sm:w-28 h-6 sm:h-8 border-2 border-t-0 border-white/80 -translate-x-1/2 pointer-events-none"></div>
+                        
+                        <!-- Bottom Penalty Box (Our Team) -->
+                        <div class="absolute bottom-3 left-1/2 w-44 sm:w-56 h-16 sm:h-20 border-2 border-b-0 border-white/80 -translate-x-1/2 pointer-events-none"></div>
+                        <div class="absolute bottom-3 left-1/2 w-20 sm:w-28 h-6 sm:h-8 border-2 border-b-0 border-white/80 -translate-x-1/2 pointer-events-none"></div>
+
+                        <!-- Dynamic Player Nodes Container -->
+                        <div id="pitchPlayersContainer" class="absolute inset-0"></div>
+                    </div>
+                </div>
+
+                <!-- Position Detail Card -->
+                <div class="lg:col-span-5">
+                    <div id="positionDetailCard" class="p-6 sm:p-8 rounded-2xl bg-slate-900 border border-emerald-500/40 shadow-xl">
+                        <div class="flex items-center justify-between border-b border-slate-800 pb-4 mb-5">
+                            <div class="flex items-center gap-3.5">
+                                <div id="posBadge" class="w-14 h-14 rounded-2xl bg-emerald-500 text-slate-950 font-display font-bold text-2xl flex items-center justify-center shadow-lg">
+                                    ST
+                                </div>
+                                <div>
+                                    <span id="posZone" class="text-xs font-semibold uppercase tracking-wider text-emerald-400">Lini Depan</span>
+                                    <h3 id="posTitle" class="text-xl sm:text-2xl font-bold text-white">Penyerang Tengah (Striker)</h3>
+                                </div>
+                            </div>
+                        </div>
+
+                        <p id="posDesc" class="text-slate-300 text-sm sm:text-base leading-relaxed mb-6">
+                            Ujung tombak utama tim yang bertugas mencetak gol sebanyak mungkin. Striker harus memiliki penempatan posisi yang cerdas, penyelesaian akhir akurat, dan ketenangan di depan gawang.
+                        </p>
+
+                        <div class="space-y-4">
+                            <div>
+                                <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">Tugas Utama di Lapangan:</h4>
+                                <ul id="posTasks" class="space-y-2 text-sm text-slate-200">
+                                    <li class="flex items-start gap-2"><i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i> Menyelesaikan peluang menjadi gol dari dalam maupun luar kotak penalti.</li>
+                                    <li class="flex items-start gap-2"><i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i> Membuka ruang bagi gelandang dan pemain sayap dengan pergerakan tanpa bola.</li>
+                                    <li class="flex items-start gap-2"><i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i> Melakukan pressing awal terhadap bek lawan saat membangun serangan.</li>
+                                </ul>
+                            </div>
+
+                            <div class="pt-4 border-t border-slate-800">
+                                <span class="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1.5">Atribut Kunci:</span>
+                                <div id="posAttributes" class="flex flex-wrap gap-2">
+                                    <span class="px-3 py-1 rounded-full text-xs font-medium bg-emerald-950 text-emerald-300 border border-emerald-700/50">Finishing</span>
+                                    <span class="px-3 py-1 rounded-full text-xs font-medium bg-emerald-950 text-emerald-300 border border-emerald-700/50">Positioning</span>
+                                    <span class="px-3 py-1 rounded-full text-xs font-medium bg-emerald-950 text-emerald-300 border border-emerald-700/50">Heading</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 4: Jadwal & Skor Pertandingan Simulasi -->
+    <section id="jadwal" class="py-20 bg-slate-900/60 border-y border-slate-800/80">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-10">
+                <div>
+                    <span class="text-emerald-400 font-semibold text-sm uppercase tracking-wider">Papan Skor Langsung</span>
+                    <h2 class="font-display text-3xl sm:text-4xl font-bold uppercase text-white mt-1">Jadwal & Skor Simulasi</h2>
+                </div>
+                <button onclick="simulateMatches()" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm transition flex items-center gap-2 self-start sm:self-auto shadow-lg shadow-emerald-600/20">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                    Simulasikan Ulang Skor
+                </button>
+            </div>
+
+            <!-- Filter Tabs -->
+            <div class="flex gap-2 mb-6 overflow-x-auto pb-2">
+                <button onclick="filterMatches('all')" class="match-tab px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold bg-emerald-500 text-slate-950" data-filter="all">Semua Laga</button>
+                <button onclick="filterMatches('live')" class="match-tab px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700" data-filter="live">Sedang Berlangsung (LIVE)</button>
+                <button onclick="filterMatches('finished')" class="match-tab px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700" data-filter="finished">Hasil Akhir (FT)</button>
+                <button onclick="filterMatches('upcoming')" class="match-tab px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700" data-filter="upcoming">Akan Datang</button>
+            </div>
+
+            <!-- Matches Grid -->
+            <div id="matchesGrid" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <!-- Populated by JavaScript -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Section 5: Mini-Game Adu Penalti Interaktif -->
+    <section id="penalti" class="py-20 bg-slate-950 relative overflow-hidden">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center max-w-2xl mx-auto mb-8">
+                <span class="text-emerald-400 font-semibold text-sm uppercase tracking-wider">Zona Permainan</span>
+                <h2 class="font-display text-3xl sm:text-4xl font-bold uppercase text-white mt-1">Mini-Game: Adu Penalti</h2>
+                <p class="text-slate-400 mt-2 text-sm sm:text-base">
+                    Klik atau ketuk area di dalam gawang untuk menembak! Taklukkan kiper lawan dalam 5 kesempatan tendangan.
+                </p>
+            </div>
+
+            <!-- Game Container -->
+            <div class="bg-slate-900 border-2 border-emerald-800/70 rounded-3xl p-4 sm:p-6 shadow-2xl">
+                <!-- Scoreboard Header -->
+                <div class="flex flex-wrap items-center justify-between gap-4 bg-slate-950 px-5 py-3.5 rounded-2xl border border-slate-800 mb-4">
+                    <div class="flex items-center gap-4">
+                        <div>
+                            <span class="text-[11px] uppercase tracking-wider text-slate-400 block">Skor Kamu</span>
+                            <span id="gameScore" class="font-display text-2xl sm:text-3xl font-bold text-emerald-400">0</span>
+                        </div>
+                        <div class="h-8 w-px bg-slate-800"></div>
+                        <div>
+                            <span class="text-[11px] uppercase tracking-wider text-slate-400 block">Tendangan</span>
+                            <span id="gameShots" class="font-display text-2xl sm:text-3xl font-bold text-white">0 / 5</span>
+                        </div>
+                    </div>
+
+                    <!-- Shot History Dots -->
+                    <div id="shotHistoryDots" class="flex items-center gap-2">
+                        <span class="w-4 h-4 rounded-full bg-slate-800 border border-slate-700"></span>
+                        <span class="w-4 h-4 rounded-full bg-slate-800 border border-slate-700"></span>
+                        <span class="w-4 h-4 rounded-full bg-slate-800 border border-slate-700"></span>
+                        <span class="w-4 h-4 rounded-full bg-slate-800 border border-slate-700"></span>
+                        <span class="w-4 h-4 rounded-full bg-slate-800 border border-slate-700"></span>
+                    </div>
+
+                    <!-- Audio & Reset Controls -->
+                    <div class="flex items-center gap-2">
+                        <button id="toggleSoundBtn" onclick="toggleGameSound()" class="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 transition" title="Suara Efek">
+                            <i id="soundIcon" data-lucide="volume-2" class="w-5 h-5"></i>
+                        </button>
+                        <button onclick="resetPenaltyGame()" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold transition flex items-center gap-1.5">
+                            <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Ulangi
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Canvas Area -->
+                <div class="relative w-full aspect-[16/10] sm:aspect-[16/9] rounded-2xl overflow-hidden bg-emerald-900 border border-emerald-700/50">
+                    <canvas id="penaltyCanvas" class="w-full h-full block"></canvas>
+
+                    <!-- Status Banner Overlay -->
+                    <div id="gameBanner" class="pointer-events-none absolute top-4 left-1/2 -translate-x-1/2 px-5 py-2 rounded-full bg-slate-950/85 border border-emerald-500/40 text-white font-display uppercase tracking-wider text-sm sm:text-lg shadow-lg transition-all duration-300">
+                        Klik Area Gawang Untuk Menendang!
+                    </div>
+
+                    <!-- End Game Modal Overlay -->
+                    <div id="gameOverOverlay" class="hidden absolute inset-0 bg-slate-950/85 backdrop-blur-sm flex flex-col items-center justify-center p-6 text-center">
+                        <div id="endGameEmoji" class="text-5xl mb-3">🏆</div>
+                        <h3 id="endGameTitle" class="font-display text-3xl sm:text-4xl font-bold uppercase text-white">Hasil Akhir</h3>
+                        <p id="endGameSubtitle" class="text-slate-300 mt-2 max-w-md text-sm sm:text-base">Kamu mencetak 4 dari 5 penalti!</p>
+                        <button onclick="resetPenaltyGame()" class="mt-6 px-7 py-3 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-base shadow-lg shadow-emerald-500/25 transition">
+                            Main Lagi
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quick Target Buttons for Easy Mobile/Keyboard Play -->
+                <div class="mt-4 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
+                    <span class="text-xs text-slate-400 w-full text-center mb-1">Atau pilih arah tendangan cepat:</span>
+                    <button onclick="shootAtPreset('top-left')" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-emerald-600 text-xs sm:text-sm font-semibold text-white transition">↖ Pojok Kiri Atas</button>
+                    <button onclick="shootAtPreset('bottom-left')" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-emerald-600 text-xs sm:text-sm font-semibold text-white transition">↙ Kiri Bawah</button>
+                    <button onclick="shootAtPreset('center')" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-emerald-600 text-xs sm:text-sm font-semibold text-white transition">⬆ Tengah</button>
+                    <button onclick="shootAtPreset('bottom-right')" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-emerald-600 text-xs sm:text-sm font-semibold text-white transition">↘ Kanan Bawah</button>
+                    <button onclick="shootAtPreset('top-right')" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-emerald-600 text-xs sm:text-sm font-semibold text-white transition">↗ Pojok Kanan Atas</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-slate-950 border-t border-slate-900 py-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center gap-2">
+                <span class="text-xl">⚽</span>
+                <span class="font-display text-lg font-bold uppercase text-white">Zona<span class="text-emerald-400">Bola</span></span>
+            </div>
+            <p class="text-xs sm:text-sm text-slate-500 text-center">
+                Dibuat dengan semangat olahraga untuk pecinta sepak bola Indonesia. Fair Play & Respect!
+            </p>
+            <a href="#beranda" class="text-xs font-semibold text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
+                Kembali ke Atas <i data-lucide="arrow-up" class="w-3.5 h-3.5"></i>
+            </a>
+        </div>
+    </footer>
+
+    <!-- Interactive Logic Script -->
+    <script>
+        // Initialize Lucide Icons
+        lucide.createIcons();
+
+        // Mobile Navigation Toggle
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const mobileMenu = document.getElementById('mobileMenu');
+        mobileMenuBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+        document.querySelectorAll('.mobile-link').forEach(link => {
+            link.addEventListener('click', () => mobileMenu.classList.add('hidden'));
+        });
+
+        /* =========================================================
+           1. DATA & INTERAKSI PAPAN TAKTIK LAPANGAN
+           ========================================================= */
+        const positionDetails = {
+            GK: {
+                badge: 'GK',
+                zone: 'Penjaga Gawang',
+                title: 'Kiper (Goalkeeper)',
+                desc: 'Benteng pertahanan terakhir yang menjadi satu-satunya pemain yang diizinkan menggunakan tangan di dalam kotak penalti sendiri.',
+                tasks: [
+                    'Menghalau dan menangkap tembakan lawan agar tidak masuk ke gawang.',
+                    'Mengatur koordinasi garis pertahanan saat situasi bola mati.',
+                    'Memulai serangan balik cepat melalui lemparan atau tendangan jauh akurat.'
+                ],
+                attributes: ['Refleks', 'Diving', 'Handling', 'Komunikasi']
+            },
+            CB: {
+                badge: 'CB',
+                zone: 'Lini Belakang',
+                title: 'Bek Tengah (Center Back)',
+                desc: 'Jantung pertahanan yang bertugas menghentikan penyerang lawan, memenangkan duel udara, dan menjaga area kotak penalti tetap aman.',
+                tasks: [
+                    'Melakukan tekel bersih, intersep umpan, dan blok tembakan lawan.',
+                    'Memenangkan duel bola atas saat tendangan sudut atau umpan silang.',
+                    'Membangun serangan dari lini belakang dengan umpan pendek yang tenang.'
+                ],
+                attributes: ['Tackling', 'Heading', 'Marking', 'Kekuatan Fisik']
+            },
+            LB: {
+                badge: 'LB/RB',
+                zone: 'Lini Belakang',
+                title: 'Bek Sayap (Full Back)',
+                desc: 'Pemain bertahan di sisi kiri dan kanan lapangan yang memiliki stamina tinggi untuk membantu pertahanan sekaligus naik menyerang.',
+                tasks: [
+                    'Mengawal pemain sayap cepat milik lawan agar tidak mengirim umpan silang.',
+                    'Melakukan overlap ke depan untuk memberikan umpan silang ke kotak penalti.',
+                    'Menjaga lebar permainan tim baik saat menyerang maupun bertahan.'
+                ],
+                attributes: ['Stamina', 'Kecepatan', 'Crossing', '1v1 Defending']
+            },
+            CDM: {
+                badge: 'CDM',
+                zone: 'Lini Tengah',
+                title: 'Gelandang Bertahan (Pivot)',
+                desc: 'Perisai di depan para bek tengah yang memutus aliran serangan lawan dan mengatur ritme permainan dari area dalam.',
+                tasks: [
+                    'Memotong jalur umpan lawan di area tengah sebelum masuk ke zona berbahaya.',
+                    'Melindungi ruang kosong yang ditinggalkan bek sayap saat maju menyerang.',
+                    'Mendistribusikan bola secara efektif dari lini belakang ke gelandang serang.'
+                ],
+                attributes: ['Intersepsi', 'Visi Bermain', 'Short Passing', 'Ketenangan']
+            },
+            CM: {
+                badge: 'CM',
+                zone: 'Lini Tengah',
+                title: 'Gelandang Tengah (Box-to-Box)',
+                desc: 'Motor penggerak tim yang menghubungkan lini pertahanan dan lini serang sepanjang 90 menit pertandingan.',
+                tasks: [
+                    'Menjaga penguasaan bola tim dan mengatur tempo cepat atau lambat.',
+                    'Membantu pertahanan saat kehilangan bola dan ikut masuk ke kotak penalti saat menyerang.',
+                    'Menciptakan peluang melalui umpan terobosan maupun tendangan jarak jauh.'
+                ],
+                attributes: ['Passing', 'Stamina', 'Kontrol Bola', 'Work Rate']
+            },
+            CAM: {
+                badge: 'CAM',
+                zone: 'Lini Tengah',
+                title: 'Gelandang Serang (Playmaker)',
+                desc: 'Kreator serangan utama tim yang beroperasi di ruang antarlini lawan untuk menciptakan peluang emas bagi para penyerang.',
+                tasks: [
+                    'Memberikan umpan kunci (key passes) dan umpan terobosan mematikan.',
+                    'Mencari ruang bebas di antara bek dan gelandang bertahan lawan.',
+                    'Mencetak gol dari lini kedua saat penyerang utama dijaga ketat.'
+                ],
+                attributes: ['Kreativitas', 'Dribbling', 'Visi', 'Through Ball']
+            },
+            LW: {
+                badge: 'LW/RW',
+                zone: 'Lini Depan',
+                title: 'Penyerang Sayap (Winger)',
+                desc: 'Pemain eksplosif di sisi lapangan yang mengandalkan kecepatan dan kemampuan dribel untuk membongkar pertahanan rapat lawan.',
+                tasks: [
+                    'Melewati bek sayap lawan dalam duel satu lawan satu.',
+                    'Menusuk ke dalam kotak penalti (cut inside) untuk melepaskan tembakan.',
+                    'Mengirimkan umpan silang akurat ke arah striker di depan gawang.'
+                ],
+                attributes: ['Kecepatan', 'Dribbling', 'Kelincahan', 'Finishing']
+            },
+            ST: {
+                badge: 'ST',
+                zone: 'Lini Depan',
+                title: 'Penyerang Tengah (Striker)',
+                desc: 'Ujung tombak utama tim yang bertugas mencetak gol sebanyak mungkin dengan penyelesaian akhir klinis di depan gawang.',
+                tasks: [
+                    'Menyelesaikan peluang menjadi gol dengan kaki maupun sundulan kepala.',
+                    'Membuka ruang bagi rekan setim dengan pergerakan tanpa bola yang cerdas.',
+                    'Menahan bola (hold-up play) sambil menunggu lini kedua naik membantu.'
+                ],
+                attributes: ['Finishing', 'Positioning', 'Heading', 'Ketenangan']
+            }
+        };
+
+        // Coordinates in percentages (x: left%, y: top%)
+        const formations = {
+            '4-3-3': [
+                { id: 'GK', label: 'GK', x: 50, y: 90 },
+                { id: 'LB', label: 'LB', x: 18, y: 74 },
+                { id: 'CB', label: 'CB', x: 38, y: 77 },
+                { id: 'CB', label: 'CB', x: 62, y: 77 },
+                { id: 'LB', label: 'RB', x: 82, y: 74 },
+                { id: 'CDM', label: 'CDM', x: 50, y: 58 },
+                { id: 'CM', label: 'CM', x: 30, y: 47 },
+                { id: 'CM', label: 'CM', x: 70, y: 47 },
+                { id: 'LW', label: 'LW', x: 20, y: 24 },
+                { id: 'ST', label: 'ST', x: 50, y: 18 },
+                { id: 'LW', label: 'RW', x: 80, y: 24 }
+            ],
+            '4-4-2': [
+                { id: 'GK', label: 'GK', x: 50, y: 90 },
+                { id: 'LB', label: 'LB', x: 18, y: 74 },
+                { id: 'CB', label: 'CB', x: 38, y: 77 },
+                { id: 'CB', label: 'CB', x: 62, y: 77 },
+                { id: 'LB', label: 'RB', x: 82, y: 74 },
+                { id: 'LW', label: 'LM', x: 18, y: 48 },
+                { id: 'CM', label: 'CM', x: 39, y: 51 },
+                { id: 'CM', label: 'CM', x: 61, y: 51 },
+                { id: 'LW', label: 'RM', x: 82, y: 48 },
+                { id: 'ST', label: 'ST', x: 38, y: 21 },
+                { id: 'ST', label: 'ST', x: 62, y: 21 }
+            ],
+            '3-5-2': [
+                { id: 'GK', label: 'GK', x: 50, y: 90 },
+                { id: 'CB', label: 'CB', x: 28, y: 77 },
+                { id: 'CB', label: 'CB', x: 50, y: 79 },
+                { id: 'CB', label: 'CB', x: 72, y: 77 },
+                { id: 'LB', label: 'LWB', x: 14, y: 52 },
+                { id: 'CDM', label: 'CDM', x: 38, y: 58 },
+                { id: 'CDM', label: 'CDM', x: 62, y: 58 },
+                { id: 'LB', label: 'RWB', x: 86, y: 52 },
+                { id: 'CAM', label: 'CAM', x: 50, y: 40 },
+                { id: 'ST', label: 'ST', x: 38, y: 20 },
+                { id: 'ST', label: 'ST', x: 62, y: 20 }
+            ]
+        };
+
+        let currentFormation = '4-3-3';
+        let selectedPlayerIndex = 9; // Default ST
+
+        function renderPitchPlayers() {
+            const container = document.getElementById('pitchPlayersContainer');
+            container.innerHTML = '';
+            const players = formations[currentFormation];
+
+            players.forEach((p, idx) => {
+                const isSelected = idx === selectedPlayerIndex;
+                const btn = document.createElement('button');
+                btn.style.left = `${p.x}%`;
+                btn.style.top = `${p.y}%`;
+                btn.className = `absolute -translate-x-1/2 -translate-y-1/2 group focus:outline-none z-10 transition-transform duration-300 ${isSelected ? 'scale-115' : 'hover:scale-110'}`;
+                btn.setAttribute('aria-label', `Posisi ${p.label}`);
+
+                btn.innerHTML = `
+                    <div class="relative flex flex-col items-center">
+                        ${isSelected ? '<span class="absolute inset-0 rounded-full bg-amber-300 player-marker-ring"></span>' : ''}
+                        <div class="w-9 h-9 sm:w-11 sm:h-11 rounded-full flex items-center justify-center font-display font-bold text-xs sm:text-sm shadow-lg border-2 transition-colors ${
+                            isSelected 
+                            ? 'bg-amber-400 text-slate-950 border-white' 
+                            : p.id === 'GK' 
+                                ? 'bg-sky-500 text-white border-white' 
+                                : 'bg-slate-900 text-white border-emerald-300 group-hover:bg-emerald-400 group-hover:text-slate-950'
+                        }">
+                            ${p.label}
+                        </div>
+                    </div>
+                `;
+
+                btn.addEventListener('click', () => {
+                    selectedPlayerIndex = idx;
+                    renderPitchPlayers();
+                    updatePositionCard(p.id, p.label);
+                });
+
+                container.appendChild(btn);
+            });
+        }
+
+        function updatePositionCard(posKey, customLabel) {
+            const data = positionDetails[posKey] || positionDetails['ST'];
+            document.getElementById('posBadge').textContent = customLabel || data.badge;
+            document.getElementById('posZone').textContent = data.zone;
+            document.getElementById('posTitle').textContent = data.title;
+            document.getElementById('posDesc').textContent = data.desc;
+
+            const tasksList = document.getElementById('posTasks');
+            tasksList.innerHTML = data.tasks.map(t => `
+                <li class="flex items-start gap-2">
+                    <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+                    <span>${t}</span>
+                </li>
+            `).join('');
+
+            const attrBox = document.getElementById('posAttributes');
+            attrBox.innerHTML = data.attributes.map(a => `
+                <span class="px-3 py-1 rounded-full text-xs font-medium bg-emerald-950 text-emerald-300 border border-emerald-700/50">${a}</span>
+            `).join('');
+
+            lucide.createIcons();
+        }
+
+        function setFormation(formName) {
+            currentFormation = formName;
+            selectedPlayerIndex = formations[formName].length - 1; // Select striker
+            
+            document.querySelectorAll('.formation-btn').forEach(btn => {
+                btn.classList.remove('bg-emerald-500', 'text-slate-950', 'shadow-md');
+                btn.classList.add('bg-slate-800', 'text-slate-300');
+            });
+            const activeBtn = document.getElementById(`btn-${formName}`);
+            activeBtn.classList.remove('bg-slate-800', 'text-slate-300');
+            activeBtn.classList.add('bg-emerald-500', 'text-slate-950', 'shadow-md');
+
+            renderPitchPlayers();
+            const activePlayer = formations[formName][selectedPlayerIndex];
+            updatePositionCard(activePlayer.id, activePlayer.label);
+        }
+
+        // Initialize Pitch
+        renderPitchPlayers();
+
+        /* =========================================================
+           2. JADWAL & SKOR PERTANDINGAN SIMULASI
+           ========================================================= */
+        let simulatedMatches = [
+            {
+                id: 1,
+                league: 'Liga Nusantara Premier',
+                status: 'live',
+                minute: "67'",
+                home: 'Garuda Muda FC',
+                homeBadge: '🦅',
+                homeScore: 2,
+                away: 'Elang Jawa United',
+                awayBadge: '⚡',
+                awayScore: 1,
+                stadium: 'Stadion Utama Gelora'
+            },
+            {
+                id: 2,
+                league: 'Liga Nusantara Premier',
+                status: 'live',
+                minute: "42'",
+                home: 'Macan Kemayoran',
+                homeBadge: '🐯',
+                homeScore: 1,
+                away: 'Maung Bandung',
+                awayBadge: '🦁',
+                awayScore: 1,
+                stadium: 'Stadion Internasional'
+            },
+            {
+                id: 3,
+                league: 'Piala Champions Asia',
+                status: 'finished',
+                minute: 'FT',
+                home: 'Bajul Ijo Persebaya',
+                homeBadge: '🐊',
+                homeScore: 3,
+                away: 'Juku Eja Makassar',
+                awayBadge: '⛵',
+                awayScore: 2,
+                stadium: 'Gelora Bung Tomo'
+            },
+            {
+                id: 4,
+                league: 'Piala Champions Asia',
+                status: 'finished',
+                minute: 'FT',
+                home: 'Serdadu Tridatu',
+                homeBadge: '🛡️',
+                homeScore: 0,
+                away: 'Singa Edan Malang',
+                awayBadge: '🔥',
+                awayScore: 0,
+                stadium: 'Stadion Kapten Dipta'
+            },
+            {
+                id: 5,
+                league: 'Liga Nusantara Premier',
+                status: 'upcoming',
+                minute: '19:30 WIB',
+                home: 'Pesut Etam Borneo',
+                homeBadge: '🐬',
+                homeScore: '-',
+                away: 'Laskar Wong Kito',
+                awayBadge: '👑',
+                awayScore: '-',
+                stadium: 'Stadion Segiri'
+            },
+            {
+                id: 6,
+                league: 'Uji Coba Internasional',
+                status: 'upcoming',
+                minute: '21:00 WIB',
+                home: 'Timnas Indonesia',
+                homeBadge: '🇮🇩',
+                homeScore: '-',
+                away: 'Samurai Blue',
+                awayBadge: '🇯🇵',
+                awayScore: '-',
+                stadium: 'Stadion Utama GBK'
+            }
+        ];
+
+        let currentMatchFilter = 'all';
+
+        function renderMatches() {
+            const grid = document.getElementById('matchesGrid');
+            const filtered = currentMatchFilter === 'all' 
+                ? simulatedMatches 
+                : simulatedMatches.filter(m => m.status === currentMatchFilter);
+
+            grid.innerHTML = filtered.map(m => {
+                let statusBadge = '';
+                if (m.status === 'live') {
+                    statusBadge = `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30"><span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-ping"></span> LIVE ${m.minute}</span>`;
+                } else if (m.status === 'finished') {
+                    statusBadge = `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-800 text-slate-300">SELESAI (FT)</span>`;
+                } else {
+                    statusBadge = `<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">${m.minute}</span>`;
+                }
+
+                return `
+                    <div class="p-5 rounded-2xl bg-slate-950 border border-slate-800 hover:border-emerald-700/60 transition flex flex-col justify-between gap-4">
+                        <div class="flex items-center justify-between text-xs text-slate-400">
+                            <span class="font-semibold text-emerald-400/90">${m.league}</span>
+                            ${statusBadge}
+                        </div>
+
+                        <div class="flex items-center justify-between gap-3 py-2">
+                            <!-- Home Team -->
+                            <div class="flex-1 flex items-center gap-3">
+                                <span class="text-2xl sm:text-3xl">${m.homeBadge}</span>
+                                <span class="font-bold text-sm sm:text-base text-white leading-tight">${m.home}</span>
+                            </div>
+
+                            <!-- Score Box -->
+                            <div class="px-4 py-2 rounded-xl bg-slate-900 border border-slate-800 font-display text-xl sm:text-2xl font-bold tracking-wider text-white shrink-0">
+                                ${m.homeScore} <span class="text-slate-500 mx-1">:</span> ${m.awayScore}
+                            </div>
+
+                            <!-- Away Team -->
+                            <div class="flex-1 flex items-center justify-end gap-3 text-right">
+                                <span class="font-bold text-sm sm:text-base text-white leading-tight">${m.away}</span>
+                                <span class="text-2xl sm:text-3xl">${m.awayBadge}</span>
+                            </div>
+                        </div>
+
+                        <div class="pt-3 border-t border-slate-900 flex items-center justify-between text-xs text-slate-500">
+                            <span class="flex items-center gap-1"><i data-lucide="map-pin" class="w-3.5 h-3.5"></i> ${m.stadium}</span>
+                            <span>Simulasi Pertandingan</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        function filterMatches(filter) {
+            currentMatchFilter = filter;
+            document.querySelectorAll('.match-tab').forEach(tab => {
+                if (tab.dataset.filter === filter) {
+                    tab.classList.remove('bg-slate-800', 'text-slate-300');
+                    tab.classList.add('bg-emerald-500', 'text-slate-950');
+                } else {
+                    tab.classList.remove('bg-emerald-500', 'text-slate-950');
+                    tab.classList.add('bg-slate-800', 'text-slate-300');
+                }
+            });
+            renderMatches();
+        }
+
+        function simulateMatches() {
+            simulatedMatches = simulatedMatches.map(m => {
+                if (m.status === 'live') {
+                    const addHome = Math.random() > 0.65 ? 1 : 0;
+                    const addAway = Math.random() > 0.65 ? 1 : 0;
+                    const nextMin = Math.min(90, parseInt(m.minute) + Math.floor(Math.random() * 8) + 2);
+                    return {
+                        ...m,
+                        homeScore: m.homeScore + addHome,
+                        awayScore: m.awayScore + addAway,
+                        minute: nextMin >= 90 ? 'FT' : `${nextMin}'`,
+                        status: nextMin >= 90 ? 'finished' : 'live'
+                    };
+                } else if (m.status === 'finished') {
+                    return {
+                        ...m,
+                        homeScore: Math.floor(Math.random() * 4),
+                        awayScore: Math.floor(Math.random() * 4)
+                    };
+                }
+                return m;
+            });
+            renderMatches();
+        }
+
+        renderMatches();
+
+        /* =========================================================
+           3. MINI-GAME ADU PENALTI (CANVAS + TONE.JS AUDIO)
+           ========================================================= */
+        const canvas = document.getElementById('penaltyCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let soundEnabled = true;
+        let audioInitialized = false;
+        let kickSynth, whistleSynth, goalSynth, saveSynth;
+
+        function initAudio() {
+            if (audioInitialized || typeof Tone === 'undefined') return;
+            try {
+                kickSynth = new Tone.MembraneSynth().toDestination();
+                goalSynth = new Tone.PolySynth(Tone.Synth).toDestination();
+                saveSynth = new Tone.NoiseSynth({
+                    noise: { type: 'brown' },
+                    envelope: { attack: 0.01, decay: 0.2, sustain: 0 }
+                }).toDestination();
+                audioInitialized = true;
+            } catch (e) {
+                console.warn('Audio init skipped:', e);
+            }
+        }
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            initAudio();
+            if (!audioInitialized) return;
+            try {
+                if (Tone.context.state !== 'running') Tone.start();
+                if (type === 'kick') {
+                    kickSynth.triggerAttackRelease('C2', '8n');
+                } else if (type === 'goal') {
+                    goalSynth.triggerAttackRelease(['C4', 'E4', 'G4', 'C5'], '4n');
+                } else if (type === 'save') {
+                    saveSynth.triggerAttackRelease('8n');
+                }
+            } catch (e) {}
+        }
+
+        function toggleGameSound() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('soundIcon');
+            icon.setAttribute('data-lucide', soundEnabled ? 'volume-2' : 'volume-x');
+            lucide.createIcons();
+        }
+
+        // Game State
+        const MAX_SHOTS = 5;
+        let gameState = {
+            score: 0,
+            shotsTaken: 0,
+            history: [], // 'goal' | 'miss'
+            phase: 'aiming', // 'aiming' | 'shooting' | 'result' | 'gameover'
+            ball: { x: 0.5, y: 0.84, radius: 16, startX: 0.5, startY: 0.84, targetX: 0.5, targetY: 0.35, progress: 0 },
+            keeper: { x: 0.5, y: 0.38, targetX: 0.5, targetY: 0.38, width: 46, height: 68, diveDir: 0 },
+            goalBox: { left: 0.22, right: 0.78, top: 0.16, bottom: 0.44 }
+        };
+
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            const dpr = window.devicePixelRatio || 1;
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        function triggerShot(normX, normY) {
+            if (gameState.phase !== 'aiming') return;
+
+            // Clamp target reasonably around the goal area
+            const clampedX = Math.max(0.16, Math.min(0.84, normX));
+            const clampedY = Math.max(0.12, Math.min(0.45, normY));
+
+            gameState.phase = 'shooting';
+            gameState.ball.startX = 0.5;
+            gameState.ball.startY = 0.84;
+            gameState.ball.targetX = clampedX;
+            gameState.ball.targetY = clampedY;
+            gameState.ball.progress = 0;
+
+            // Keeper AI decides dive direction
+            const choices = [0.28, 0.38, 0.5, 0.62, 0.72];
+            const randomChoice = choices[Math.floor(Math.random() * choices.length)];
+            gameState.keeper.targetX = randomChoice;
+            gameState.keeper.targetY = clampedY < 0.27 ? 0.31 : 0.39;
+            gameState.keeper.diveDir = randomChoice < 0.45 ? -1 : randomChoice > 0.55 ? 1 : 0;
+
+            playSound('kick');
+            setBanner('Bola Meluncur...', 'text-amber-300');
+        }
+
+        function shootAtPreset(preset) {
+            const map = {
+                'top-left': { x: 0.26, y: 0.20 },
+                'bottom-left': { x: 0.26, y: 0.39 },
+                'center': { x: 0.50, y: 0.25 },
+                'bottom-right': { x: 0.74, y: 0.39 },
+                'top-right': { x: 0.74, y: 0.20 }
+            };
+            const t = map[preset];
+            if (t) triggerShot(t.x, t.y);
+        }
+
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const normX = (e.clientX - rect.left) / rect.width;
+            const normY = (e.clientY - rect.top) / rect.height;
+            triggerShot(normX, normY);
+        });
+
+        function setBanner(text, colorClass = 'text-white') {
+            const banner = document.getElementById('gameBanner');
+            banner.textContent = text;
+            banner.className = `pointer-events-none absolute top-4 left-1/2 -translate-x-1/2 px-5 py-2 rounded-full bg-slate-950/90 border border-emerald-500/40 font-display uppercase tracking-wider text-sm sm:text-lg shadow-lg transition-all duration-300 ${colorClass}`;
+        }
+
+        function updateScoreboardUI() {
+            document.getElementById('gameScore').textContent = gameState.score;
+            document.getElementById('gameShots').textContent = `${gameState.shotsTaken} / ${MAX_SHOTS}`;
+
+            const dotsContainer = document.getElementById('shotHistoryDots');
+            let dotsHTML = '';
+            for (let i = 0; i < MAX_SHOTS; i++) {
+                const status = gameState.history[i];
+                if (status === 'goal') {
+                    dotsHTML += `<span class="w-4 h-4 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50"></span>`;
+                } else if (status === 'miss') {
+                    dotsHTML += `<span class="w-4 h-4 rounded-full bg-rose-500 shadow-sm shadow-rose-500/50"></span>`;
+                } else {
+                    dotsHTML += `<span class="w-4 h-4 rounded-full bg-slate-800 border border-slate-700"></span>`;
+                }
+            }
+            dotsContainer.innerHTML = dotsHTML;
+        }
+
+        function evaluateShotResult() {
+            const { ball, keeper, goalBox } = gameState;
+            const inGoalX = ball.targetX > goalBox.left + 0.015 && ball.targetX < goalBox.right - 0.015;
+            const inGoalY = ball.targetY > goalBox.top + 0.015 && ball.targetY < goalBox.bottom;
+
+            const distToKeeper = Math.hypot(ball.targetX - keeper.x, ball.targetY - keeper.y);
+            const isSaved = distToKeeper < 0.095;
+
+            gameState.shotsTaken++;
+
+            if (!inGoalX || !inGoalY) {
+                gameState.history.push('miss');
+                setBanner('MELENCENG! Bola Keluar Gawang', 'text-rose-400');
+                playSound('save');
+            } else if (isSaved) {
+                gameState.history.push('miss');
+                setBanner('DITEPIS KIPER! Penyelamatan Gemilang', 'text-amber-400');
+                playSound('save');
+            } else {
+                gameState.score++;
+                gameState.history.push('goal');
+                setBanner('GOOOLLL!! Tembakan Akurat!', 'text-emerald-400');
+                playSound('goal');
+            }
+
+            updateScoreboardUI();
+            gameState.phase = 'result';
+
+            setTimeout(() => {
+                if (gameState.shotsTaken >= MAX_SHOTS) {
+                    showGameOver();
+                } else {
+                    // Reset ball and keeper for next shot
+                    gameState.ball.x = 0.5;
+                    gameState.ball.y = 0.84;
+                    gameState.ball.progress = 0;
+                    gameState.keeper.x = 0.5;
+                    gameState.keeper.y = 0.38;
+                    gameState.keeper.diveDir = 0;
+                    gameState.phase = 'aiming';
+                    setBanner('Klik Area Gawang Untuk Menendang!', 'text-white');
+                }
+            }, 1400);
+        }
+
+        function showGameOver() {
+            gameState.phase = 'gameover';
+            const overlay = document.getElementById('gameOverOverlay');
+            const emoji = document.getElementById('endGameEmoji');
+            const title = document.getElementById('endGameTitle');
+            const sub = document.getElementById('endGameSubtitle');
+
+            if (gameState.score >= 4) {
+                emoji.textContent = '🏆';
+                title.textContent = 'Eksekutor Kelas Dunia!';
+            } else if (gameState.score >= 2) {
+                emoji.textContent = '⚽';
+                title.textContent = 'Permainan Cukup Baik!';
+            } else {
+                emoji.textContent = '🧤';
+                title.textContent = 'Kiper Lawan Terlalu Tangguh!';
+            }
+            sub.textContent = `Kamu berhasil mencetak ${gameState.score} gol dari ${MAX_SHOTS} kesempatan penalti.`;
+            overlay.classList.remove('hidden');
+        }
+
+        function resetPenaltyGame() {
+            gameState.score = 0;
+            gameState.shotsTaken = 0;
+            gameState.history = [];
+            gameState.phase = 'aiming';
+            gameState.ball = { x: 0.5, y: 0.84, radius: 16, startX: 0.5, startY: 0.84, targetX: 0.5, targetY: 0.35, progress: 0 };
+            gameState.keeper = { x: 0.5, y: 0.38, targetX: 0.5, targetY: 0.38, width: 46, height: 68, diveDir: 0 };
+            
+            document.getElementById('gameOverOverlay').classList.add('hidden');
+            setBanner('Klik Area Gawang Untuk Menendang!', 'text-white');
+            updateScoreboardUI();
+        }
+
+        function drawGameScene() {
+            const w = canvas.getBoundingClientRect().width;
+            const h = canvas.getBoundingClientRect().height;
+            ctx.clearRect(0, 0, w, h);
+
+            // 1. Stadium Sky / Crowd Backdrop
+            const skyGrad = ctx.createLinearGradient(0, 0, 0, h * 0.44);
+            skyGrad.addColorStop(0, '#020617');
+            skyGrad.addColorStop(1, '#0f172a');
+            ctx.fillStyle = skyGrad;
+            ctx.fillRect(0, 0, w, h * 0.44);
+
+            // Stadium Floodlights glow
+            ctx.fillStyle = 'rgba(52, 211, 153, 0.08)';
+            ctx.beginPath();
+            ctx.arc(w * 0.15, h * 0.08, w * 0.18, 0, Math.PI * 2);
+            ctx.arc(w * 0.85, h * 0.08, w * 0.18, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 2. Green Grass Pitch (Perspective)
+            const grassGrad = ctx.createLinearGradient(0, h * 0.44, 0, h);
+            grassGrad.addColorStop(0, '#15803d');
+            grassGrad.addColorStop(1, '#166534');
+            ctx.fillStyle = grassGrad;
+            ctx.fillRect(0, h * 0.44, w, h * 0.56);
+
+            // Grass Stripes
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.04)';
+            for (let i = 0; i < 6; i += 2) {
+                const stripeY = h * 0.44 + (h * 0.56 / 6) * i;
+                ctx.fillRect(0, stripeY, w, (h * 0.56 / 6));
+            }
+
+            // 3. Penalty Box Lines
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.75)';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            // Goal line
+            ctx.moveTo(0, h * 0.44);
+            ctx.lineTo(w, h * 0.44);
+            // Penalty area trapezoid
+            ctx.moveTo(w * 0.14, h * 0.44);
+            ctx.lineTo(w * 0.04, h * 0.92);
+            ctx.lineTo(w * 0.96, h * 0.92);
+            ctx.lineTo(w * 0.86, h * 0.44);
+            ctx.stroke();
+
+            // Penalty Spot
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.ellipse(w * 0.5, h * 0.85, 7, 3.5, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 4. Goalpost & Net
+            const gLeft = w * gameState.goalBox.left;
+            const gRight = w * gameState.goalBox.right;
+            const gTop = h * gameState.goalBox.top;
+            const gBottom = h * gameState.goalBox.bottom;
+            const gWidth = gRight - gLeft;
+            const gHeight = gBottom - gTop;
+
+            // Net background
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.08)';
+            ctx.fillRect(gLeft, gTop, gWidth, gHeight);
+
+            // Net grid lines
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+            ctx.lineWidth = 1;
+            const cols = 14;
+            const rows = 7;
+            for (let c = 1; c < cols; c++) {
+                const nx = gLeft + (gWidth / cols) * c;
+                ctx.beginPath();
+                ctx.moveTo(nx, gTop);
+                ctx.lineTo(nx, gBottom);
+                ctx.stroke();
+            }
+            for (let r = 1; r < rows; r++) {
+                const ny = gTop + (gHeight / rows) * r;
+                ctx.beginPath();
+                ctx.moveTo(gLeft, ny);
+                ctx.lineTo(gRight, ny);
+                ctx.stroke();
+            }
+
+            // Goal Frame (Posts & Crossbar)
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 6;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(gLeft, gBottom);
+            ctx.lineTo(gLeft, gTop);
+            ctx.lineTo(gRight, gTop);
+            ctx.lineTo(gRight, gBottom);
+            ctx.stroke();
+
+            // 5. Goalkeeper
+            const kx = w * gameState.keeper.x;
+            const ky = h * gameState.keeper.y;
+            const scaleFactor = Math.min(w, h) / 450;
+
+            ctx.save();
+            ctx.translate(kx, ky);
+            if (gameState.phase === 'shooting' || gameState.phase === 'result') {
+                ctx.rotate(gameState.keeper.diveDir * 0.55);
+            }
+
+            // Keeper Shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.3)';
+            ctx.beginPath();
+            ctx.ellipse(0, 32 * scaleFactor, 22 * scaleFactor, 6 * scaleFactor, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Keeper Jersey (Bright Amber/Orange)
+            ctx.fillStyle = '#f59e0b';
+            ctx.beginPath();
+            ctx.roundRect(-16 * scaleFactor, -16 * scaleFactor, 32 * scaleFactor, 34 * scaleFactor, 6);
+            ctx.fill();
+
+            // Keeper Arms & Gloves
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 6 * scaleFactor;
+            ctx.beginPath();
+            ctx.moveTo(-14 * scaleFactor, -10 * scaleFactor);
+            ctx.lineTo(-28 * scaleFactor, -22 * scaleFactor);
+            ctx.moveTo(14 * scaleFactor, -10 * scaleFactor);
+            ctx.lineTo(28 * scaleFactor, -22 * scaleFactor);
+            ctx.stroke();
+
+            // Gloves
+            ctx.fillStyle = '#38bdf8';
+            ctx.beginPath();
+            ctx.arc(-29 * scaleFactor, -23 * scaleFactor, 5.5 * scaleFactor, 0, Math.PI * 2);
+            ctx.arc(29 * scaleFactor, -23 * scaleFactor, 5.5 * scaleFactor, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Keeper Head
+            ctx.fillStyle = '#fde68a';
+            ctx.beginPath();
+            ctx.arc(0, -25 * scaleFactor, 9 * scaleFactor, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Keeper Shorts
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(-13 * scaleFactor, 16 * scaleFactor, 26 * scaleFactor, 12 * scaleFactor);
+            ctx.restore();
+
+            // 6. Soccer Ball
+            const bx = w * gameState.ball.x;
+            const by = h * gameState.ball.y;
+            // Shrink ball slightly as it travels into the distance
+            const ballScale = (1 - gameState.ball.progress * 0.42) * scaleFactor;
+            const r = 15 * ballScale;
+
+            // Ball Shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.35)';
+            ctx.beginPath();
+            ctx.ellipse(bx, by + r * 0.9, r * 0.9, r * 0.35, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Ball Base
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(bx, by, r, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#0f172a';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // Pentagon Pattern on Ball
+            ctx.fillStyle = '#0f172a';
+            ctx.beginPath();
+            ctx.arc(bx, by, r * 0.38, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function gameLoop() {
+            if (gameState.phase === 'shooting') {
+                gameState.ball.progress += 0.045;
+                const t = Math.min(1, gameState.ball.progress);
+                // Ease out quad
+                const ease = 1 - (1 - t) * (1 - t);
+
+                gameState.ball.x = gameState.ball.startX + (gameState.ball.targetX - gameState.ball.startX) * ease;
+                // Add slight arc to ball height
+                const arcOffset = Math.sin(t * Math.PI) * 0.08;
+                gameState.ball.y = gameState.ball.startY + (gameState.ball.targetY - gameState.ball.startY) * ease - arcOffset;
+
+                // Move keeper smoothly toward dive target
+                gameState.keeper.x += (gameState.keeper.targetX - gameState.keeper.x) * 0.14;
+                gameState.keeper.y += (gameState.keeper.targetY - gameState.keeper.y) * 0.14;
+
+                if (t >= 1) {
+                    evaluateShotResult();
+                }
+            }
+
+            drawGameScene();
+            requestAnimationFrame(gameLoop);
+        }
+
+        window.onload = function() {
+            resizeCanvas();
+            gameLoop();
+        };
+    </script>
+</body>
+</html>
